@@ -25,14 +25,19 @@ public class EmailService {
                 "Recuperación de contraseña - OFIX"
         );
 
+        String enlace =
+            "http://localhost:3000/reset-password?token="
+            + token;
+
         mensaje.setText(
                 "Hola,\n\n"
                 + "Recibimos una solicitud para recuperar "
                 + "la contraseña de tu cuenta OFIX.\n\n"
-                + "Tu código de recuperación es:\n\n"
-                + token
+                + "Haz clic en el siguiente enlace para "
+                + "restablecer tu contraseña:\n\n"
+                + enlace
                 + "\n\n"
-                + "Este código tiene una validez de 15 minutos "
+                + "Este enlace tiene una validez de 15 minutos "
                 + "y solo puede utilizarse una vez.\n\n"
                 + "Si no solicitaste este cambio, puedes ignorar "
                 + "este correo.\n\n"
@@ -40,5 +45,5 @@ public class EmailService {
         );
 
         mailSender.send(mensaje);
-    }
+   }
 }
