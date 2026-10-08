@@ -192,6 +192,13 @@ public class UsuarioService {
         usuarioRepository.save(usuario);
     }
 
+    public Optional<UsuarioResponse> cambiarEstado(Long id, boolean activo) {
+        return usuarioRepository.findById(id).map(usuario -> {
+                usuario.setActivo(activo);
+                return convertirAResponse(usuarioRepository.save(usuario));
+        });
+    }
+
 
     // Convierte la entidad Usuario en una respuesta segura para la API.
     private UsuarioResponse convertirAResponse(Usuario usuario) {

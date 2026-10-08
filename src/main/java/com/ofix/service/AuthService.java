@@ -3,6 +3,7 @@ package com.ofix.service;
 import com.ofix.dto.AuthRequest;
 import com.ofix.dto.AuthResponse;
 import com.ofix.entity.Usuario;
+import com.ofix.exception.ReglaNegocioException;
 import com.ofix.repository.UsuarioRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -43,6 +44,13 @@ public class AuthService {
             throw new RuntimeException(
                     "Credenciales incorrectas"
             );
+        }
+
+        //Una cuenta suspendida no puede iniciar sesión 
+        if (!usuario.getActivo()) {
+                throw new ReglaNegocioException(
+                        "Tu cuenta está suspendida. Contacta al administrador."
+                );
         }
 
         // Generamos el JWT utilizando el email.

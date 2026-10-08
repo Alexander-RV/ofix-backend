@@ -77,6 +77,34 @@ public class SecurityConfig {
                                 "/api/usuarios/**"
                         ).hasRole("ADMIN")
 
+                        // ---- NUEVO: panel administrativo ----
+
+                        // Todos los endpoints del panel son solo para ADMIN
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+
+                        // Listar todos los usuarios es solo para ADMIN
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/usuarios"
+                        ).hasRole("ADMIN")
+
+                        // Categorías: consultar es para cualquier usuario con sesión,
+                        // pero crear, editar y eliminar es solo para ADMIN
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/categorias/**"
+                        ).hasRole("ADMIN")
+
+                        .requestMatchers(
+                                HttpMethod.PUT,
+                                "/api/categorias/**"
+                        ).hasRole("ADMIN")
+
+                        .requestMatchers(
+                                HttpMethod.DELETE,
+                                "/api/categorias/**"
+                        ).hasRole("ADMIN")
+
                         // Todo lo demás requiere autenticación
                         .anyRequest().authenticated()
                 )
