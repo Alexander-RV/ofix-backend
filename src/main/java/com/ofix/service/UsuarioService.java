@@ -50,7 +50,8 @@ public class UsuarioService {
     public UsuarioResponse guardarUsuario(UsuarioRequest request) {
 
         // Verificamos si el email ya está registrado.
-        if (usuarioRepository.findByEmail(request.getEmail()).isPresent()) {
+        String email = request.getEmail().trim().toLowerCase();
+        if (usuarioRepository.findByEmailIgnoreCase(email).isPresent()) {
             throw new ReglaNegocioException("El email ya está registrado");
         }
 
@@ -65,7 +66,7 @@ public class UsuarioService {
 
         usuario.setNombre(request.getNombre());
         usuario.setApellido(request.getApellido());
-        usuario.setEmail(request.getEmail());
+        usuario.setEmail(email);
 
         // La contraseña se almacena utilizando Bcrypt
         usuario.setPassword(passwordEncoder.encode(request.getPassword()));
