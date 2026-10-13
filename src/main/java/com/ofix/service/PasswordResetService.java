@@ -34,7 +34,7 @@ public class PasswordResetService {
     public void generarToken(String email) {
 
         Usuario usuario = usuarioRepository
-                .findByEmail(email)
+                .findByEmailIgnoreCase(email.trim())
                 .orElseThrow(() ->
                         new RuntimeException(
                                 "No existe un usuario con ese correo"

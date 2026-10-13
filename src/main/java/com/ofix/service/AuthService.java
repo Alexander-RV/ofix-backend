@@ -29,7 +29,7 @@ public class AuthService {
 
         // Buscamos el usuario por email.
         Usuario usuario = usuarioRepository
-                .findByEmail(request.getEmail())
+                .findByEmailIgnoreCase(request.getEmail().trim())
                 .orElseThrow(() ->
                         new RuntimeException(
                                 "Credenciales incorrectas"

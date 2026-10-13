@@ -153,7 +153,7 @@ public class UsuarioService {
             }
 
             Optional<Usuario> usuarioConEmail =
-                    usuarioRepository.findByEmail(request.getEmail());
+                    usuarioRepository.findByEmailIgnoreCase(request.getEmail().trim().toLowerCase());
 
             // El email solo puede pertenecer al mismo usuario
             if (usuarioConEmail.isPresent()
@@ -165,7 +165,7 @@ public class UsuarioService {
 
             usuario.setNombre(request.getNombre());
             usuario.setApellido(request.getApellido());
-            usuario.setEmail(request.getEmail());
+            usuario.setEmail(request.getEmail().trim().toLowerCase());
 
             // Encriptación del password antes de guardarla
             usuario.setPassword(passwordEncoder.encode(request.getPassword()));
@@ -182,7 +182,7 @@ public class UsuarioService {
                 .map(usuario -> {
 
                     Optional<Usuario> usuarioConEmail =
-                            usuarioRepository.findByEmail(request.getEmail());
+                            usuarioRepository.findByEmailIgnoreCase(request.getEmail().trim().toLowerCase());
 
                     if (usuarioConEmail.isPresent()
                             && !usuarioConEmail.get()
@@ -195,7 +195,7 @@ public class UsuarioService {
 
                     usuario.setNombre(request.getNombre());
                     usuario.setApellido(request.getApellido());
-                    usuario.setEmail(request.getEmail());
+                    usuario.setEmail(request.getEmail().trim().toLowerCase());
 
                     return convertirAResponse(usuarioRepository.save(usuario));
                 });
