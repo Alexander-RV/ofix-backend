@@ -3,6 +3,7 @@ package com.ofix.dto;
 import com.ofix.entity.Rol;
 import lombok.Getter;
 import lombok.Setter;
+import java.util.List;
 
 import java.time.LocalDateTime;
 
@@ -23,4 +24,16 @@ public class UsuarioResponse {
     private Boolean activo;
 
     private LocalDateTime fechaRegistro;
+
+    private String profesion;
+
+    private Integer anosExperiencia;
+
+    private String descripcionProfesional;
+
+    private String zonaTrabajo;
+
+    private List<String> categorias;
+
+
 }

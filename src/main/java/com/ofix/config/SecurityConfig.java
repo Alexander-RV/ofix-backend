@@ -71,6 +71,13 @@ public class SecurityConfig {
                                 "/api/usuarios"
                         ).permitAll()
 
+                        // Consultar categorías es público: el registro de
+                        // profesionales las necesita antes de iniciar sesión
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/categorias"
+                        ).permitAll()
+
                         // Solo ADMIN puede eliminar usuarios
                         .requestMatchers(
                                 HttpMethod.DELETE,

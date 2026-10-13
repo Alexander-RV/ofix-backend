@@ -8,6 +8,7 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
+import java.util.List;
 @Getter
 @Setter
 public class UsuarioRequest {
@@ -32,4 +33,17 @@ public class UsuarioRequest {
 
     @NotNull(message = "El rol es obligatorio")
     private Rol rol;
+
+    private String profesion;
+
+    private Integer anosExperiencia;
+
+    @Size(max = 500, message = "La descripción debe tener máximo 500 caracteres")
+    private String descripcionProfesional;
+
+    private String zonaTrabajo;
+
+    private List<Long> categoriaIds;
+
+
 }
