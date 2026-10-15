@@ -3,17 +3,19 @@ package com.ofix.service;
 import com.ofix.dto.ServicioRequest;
 import com.ofix.dto.ServicioResponse;
 import com.ofix.entity.CategoriaServicio;
+import com.ofix.entity.Oferta;
 import com.ofix.entity.Servicio;
 import com.ofix.entity.Usuario;
 import com.ofix.exception.ReglaNegocioException;
 import com.ofix.repository.CategoriaServicioRepository;
+import com.ofix.repository.OfertaRepository;
 import com.ofix.repository.ServicioRepository;
 import com.ofix.repository.UsuarioRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-
-
 import java.util.List;
 import java.util.Optional;
 
@@ -23,15 +25,18 @@ public class ServicioService {
     private final ServicioRepository servicioRepository;
     private final UsuarioRepository usuarioRepository;
     private final CategoriaServicioRepository categoriaRepository;
+    private final OfertaRepository ofertaRepository;
 
     public ServicioService(
             ServicioRepository servicioRepository,
             UsuarioRepository usuarioRepository,
-            CategoriaServicioRepository categoriaRepository) {
+            CategoriaServicioRepository categoriaRepository,
+            OfertaRepository ofertaRepository) {
 
         this.servicioRepository = servicioRepository;
         this.usuarioRepository = usuarioRepository;
         this.categoriaRepository = categoriaRepository;
+        this.ofertaRepository = ofertaRepository;
     }
 
     public List<ServicioResponse> listarServicios() {
@@ -48,11 +53,34 @@ public class ServicioService {
                 .toList();
     }
 
-    public List<ServicioResponse> listarServiciosDisponibles() {
+    // Solicitudes pendientes de las categorías del profesional.
+    @Transactional(readOnly = true)
+    public List<ServicioResponse> listarServiciosDisponibles(
+            Long trabajadorId) {
+
+        Usuario trabajador = usuarioRepository.findById(trabajadorId)
+                .orElseThrow(() ->
+                        new ReglaNegocioException("El usuario no existe"));
+
+        if (trabajador.getCategorias().isEmpty()) {
+            return List.of();
+        }
+
         return servicioRepository
-                .findByEstadoAndTrabajadorIsNull("PENDIENTE")
+                .findByEstadoAndTrabajadorIsNullAndCategoriaInOrderByFechaSolicitudDesc(
+                        "PENDIENTE",
+                        trabajador.getCategorias())
                 .stream()
-                .map(this::convertirAResponse)
+                .map(servicio -> {
+                    ServicioResponse response = convertirAResponse(servicio);
+                    response.setYaOfertado(
+                            ofertaRepository
+                                    .existsByServicioIdAndTrabajadorIdAndEstado(
+                                            servicio.getId(),
+                                            trabajadorId,
+                                            "PENDIENTE"));
+                    return response;
+                })
                 .toList();
     }
 
@@ -143,6 +171,7 @@ public class ServicioService {
         });
     }
 
+    @Transactional
     public void eliminarServicio(
             Long id,
             Long usuarioId) {
@@ -165,6 +194,9 @@ public class ServicioService {
                     "Solo se pueden eliminar servicios pendientes"
             );
         }
+
+        // Se eliminan primero las ofertas asociadas.
+        ofertaRepository.deleteAll(ofertaRepository.findByServicioId(id));
 
         servicioRepository.delete(servicio);
     }
@@ -245,6 +277,7 @@ public class ServicioService {
                 });
     }
 
+    @Transactional
     public Optional<ServicioResponse> cancelarServicio(
             Long servicioId,
             Long clienteId) {
@@ -268,6 +301,13 @@ public class ServicioService {
                     }
 
                     servicio.setEstado("CANCELADO");
+
+                    // Las ofertas pendientes dejan de tener sentido.
+                    List<Oferta> pendientes =
+                            ofertaRepository.findByServicioIdAndEstado(
+                                    servicio.getId(), "PENDIENTE");
+                    pendientes.forEach(o -> o.setEstado("RECHAZADA"));
+                    ofertaRepository.saveAll(pendientes);
 
                     Servicio servicioActualizado =
                             servicioRepository.save(servicio);
@@ -310,7 +350,15 @@ public class ServicioService {
         response.setDescripcion(servicio.getDescripcion());
         response.setDireccion(servicio.getDireccion());
         response.setFechaSolicitud(servicio.getFechaSolicitud());
+        response.setFechaProgramada(servicio.getFechaProgramada());
+        response.setPresupuesto(servicio.getPresupuesto());
+        response.setPrecioAcordado(servicio.getPrecioAcordado());
         response.setEstado(servicio.getEstado());
+
+        response.setTotalOfertas(
+                ofertaRepository.countByServicioIdAndEstado(
+                        servicio.getId(), "PENDIENTE")
+        );
 
         response.setClienteId(
                 servicio.getCliente().getId()
@@ -342,10 +390,6 @@ public class ServicioService {
         response.setCategoriaNombre(
                 servicio.getCategoria().getNombre()
         );
-
-        response.setFechaProgramada(servicio.getFechaProgramada());
-        response.setPresupuesto(servicio.getPresupuesto());
-        response.setPrecioAcordado(servicio.getPrecioAcordado());
 
         return response;
     }

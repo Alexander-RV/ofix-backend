@@ -41,7 +41,7 @@ public class ServicioController {
         }
 
         return ResponseEntity.ok(
-                servicioService.listarServiciosDisponibles()
+                servicioService.listarServiciosDisponibles(usuario.getId())
         );
     }
 

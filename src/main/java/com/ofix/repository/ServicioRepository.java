@@ -3,7 +3,8 @@ package com.ofix.repository;
 
 
 import org.springframework.data.jpa.repository.JpaRepository;
-
+import com.ofix.entity.CategoriaServicio;
+import java.util.Collection;
 import com.ofix.entity.Servicio;
 import java.util.List;
 
@@ -14,4 +15,7 @@ public interface ServicioRepository extends JpaRepository<Servicio, Long>{
     List<Servicio> findByEstadoAndTrabajadorIsNull(String estado);
 
     List<Servicio> findByTrabajadorIdAndEstado(Long trabajadorId, String estado); 
+
+    List<Servicio> findByEstadoAndTrabajadorIsNullAndCategoriaInOrderByFechaSolicitudDesc(
+            String estado, Collection<CategoriaServicio> categorias);
 }

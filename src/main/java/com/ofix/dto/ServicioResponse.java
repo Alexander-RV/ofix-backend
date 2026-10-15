@@ -39,4 +39,11 @@ public class ServicioResponse {
     // Información básica de la categoría.
     private Long categoriaId;
     private String categoriaNombre;
+
+    // Cantidad de ofertas pendientes que tiene la solicitud.
+    private Long totalOfertas;
+
+    // Solo en "disponibles": si el profesional ya ofertó.
+    private Boolean yaOfertado;
+
 }
