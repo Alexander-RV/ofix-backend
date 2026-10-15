@@ -3,6 +3,7 @@ package com.ofix.dto;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Getter
@@ -19,13 +20,19 @@ public class ServicioResponse {
 
     private LocalDateTime fechaSolicitud;
 
+    private LocalDateTime fechaProgramada;
+
+    private BigDecimal presupuesto;
+
+    private BigDecimal precioAcordado;
+
     private String estado;
 
     // Información básica del cliente.
     private Long clienteId;
     private String clienteNombre;
 
-    // Información del trabajador que acepta el servicio.
+    // Información del trabajador que realiza el servicio.
     private Long trabajadorId;
     private String trabajadorNombre;
 

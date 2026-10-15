@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -29,6 +30,17 @@ public class Servicio {
     @Column(nullable = false)
     private LocalDateTime fechaSolicitud = LocalDateTime.now();
 
+    // Cuándo quiere el cliente que se realice el servicio.
+    private LocalDateTime fechaProgramada;
+
+    // Presupuesto aproximado del cliente.
+    @Column(precision = 12, scale = 2)
+    private BigDecimal presupuesto;
+
+    // Precio final acordado al aceptar una oferta.
+    @Column(precision = 12, scale = 2)
+    private BigDecimal precioAcordado;
+
     @Column(nullable = false)
     private String estado = "PENDIENTE";
 
@@ -41,8 +53,6 @@ public class Servicio {
     @ManyToOne
     @JoinColumn(name = "trabajador_id")
     private Usuario trabajador;
-
-
 
     // Categoría a la que pertenece el servicio.
     @ManyToOne

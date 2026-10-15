@@ -10,6 +10,9 @@ import com.ofix.repository.CategoriaServicioRepository;
 import com.ofix.repository.ServicioRepository;
 import com.ofix.repository.UsuarioRepository;
 import org.springframework.stereotype.Service;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
 
 import java.util.List;
 import java.util.Optional;
@@ -99,6 +102,8 @@ public class ServicioService {
         servicio.setCliente(cliente.get());
         servicio.setCategoria(categoria.get());
 
+        aplicarDatosOpcionales(servicio, request);
+
         Servicio servicioGuardado =
                 servicioRepository.save(servicio);
 
@@ -129,6 +134,8 @@ public class ServicioService {
             servicio.setTitulo(request.getTitulo());
             servicio.setDescripcion(request.getDescripcion());
             servicio.setDireccion(request.getDireccion());
+
+            aplicarDatosOpcionales(servicio, request);
 
             return convertirAResponse(
                     servicioRepository.save(servicio)
@@ -271,6 +278,27 @@ public class ServicioService {
                 });
     }
 
+    // Valida y aplica los datos opcionales de la solicitud.
+    private void aplicarDatosOpcionales(
+            Servicio servicio,
+            ServicioRequest request) {
+
+        if (request.getFechaProgramada() != null
+                && request.getFechaProgramada().isBefore(LocalDateTime.now())) {
+            throw new ReglaNegocioException(
+                    "La fecha del servicio no puede estar en el pasado");
+        }
+
+        if (request.getPresupuesto() != null
+                && request.getPresupuesto().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new ReglaNegocioException(
+                    "El presupuesto debe ser mayor que cero");
+        }
+
+        servicio.setFechaProgramada(request.getFechaProgramada());
+        servicio.setPresupuesto(request.getPresupuesto());
+    }
+
     private ServicioResponse convertirAResponse(
             Servicio servicio) {
 
@@ -314,6 +342,10 @@ public class ServicioService {
         response.setCategoriaNombre(
                 servicio.getCategoria().getNombre()
         );
+
+        response.setFechaProgramada(servicio.getFechaProgramada());
+        response.setPresupuesto(servicio.getPresupuesto());
+        response.setPrecioAcordado(servicio.getPrecioAcordado());
 
         return response;
     }

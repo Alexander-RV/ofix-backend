@@ -75,7 +75,13 @@ public class UsuarioService {
 
         // Si es profesional, validamos y guardamos sus datos profesionales.
         if (rol == Rol.TRABAJADOR) {
-            aplicarDatosProfesionales(usuario, request);
+            aplicarDatosProfesionales(
+                    usuario,
+                    request.getProfesion(),
+                    request.getAnosExperiencia(),
+                    request.getDescripcionProfesional(),
+                    request.getZonaTrabajo(),
+                    request.getCategoriaIds());
         }
 
         Usuario usuarioGuardado = usuarioRepository.save(usuario);
@@ -84,34 +90,39 @@ public class UsuarioService {
         return convertirAResponse(usuarioGuardado);
     }
 
-    private void aplicarDatosProfesionales(Usuario usuario, UsuarioRequest request) {
+    private void aplicarDatosProfesionales(
+            Usuario usuario,
+            String profesion,
+            Integer anosExperiencia,
+            String descripcionProfesional,
+            String zonaTrabajo,
+            List<Long> categoriaIds) {
 
-        if (request.getProfesion() == null || request.getProfesion().isBlank()) {
+        if (profesion == null || profesion.isBlank()) {
             throw new ReglaNegocioException(
                     "La profesión u oficio es obligatoria para los profesionales");
         }
 
-        Integer anos = request.getAnosExperiencia();
-        if (anos == null || anos < 0 || anos > 60) {
+        
+        if (anosExperiencia == null || anosExperiencia < 0 || anosExperiencia > 60) {
             throw new ReglaNegocioException(
                     "Los años de experiencia deben estar entre 0 y 60");
         }
 
-        if (request.getZonaTrabajo() == null || request.getZonaTrabajo().isBlank()) {
+        if (zonaTrabajo == null || zonaTrabajo.isBlank()) {
             throw new ReglaNegocioException(
                     "La zona de trabajo es obligatoria para los profesionales");
         }
 
-        List<Long> ids = request.getCategoriaIds();
-        if (ids == null || ids.isEmpty()) {
+        if (categoriaIds == null || categoriaIds.isEmpty()) {
             throw new ReglaNegocioException(
                     "Selecciona al menos una categoría de servicio");
         }
 
-        List<CategoriaServicio> categorias = categoriaRepository.findAllById(ids);
+        List<CategoriaServicio> categorias = categoriaRepository.findAllById(categoriaIds);
 
         boolean todasValidas =
-                categorias.size() == new HashSet<>(ids).size()
+                categorias.size() == new HashSet<>(categoriaIds).size()
                 && categorias.stream()
                         .allMatch(c -> Boolean.TRUE.equals(c.getActivo()));
 
@@ -120,13 +131,11 @@ public class UsuarioService {
                     "Alguna de las categorías seleccionadas no existe o no está activa");
         }
 
-        usuario.setProfesion(request.getProfesion().trim());
-        usuario.setAnosExperiencia(anos);
-        usuario.setZonaTrabajo(request.getZonaTrabajo().trim());
-
-        String descripcion = request.getDescripcionProfesional();
+        usuario.setProfesion(profesion.trim());
+        usuario.setAnosExperiencia(anosExperiencia);
+        usuario.setZonaTrabajo(zonaTrabajo.trim());
         usuario.setDescripcionProfesional(
-                (descripcion == null || descripcion.isBlank()) ? null : descripcion.trim());
+                (descripcionProfesional == null || descripcionProfesional.isBlank()) ? null : descripcionProfesional.trim());
 
         usuario.setCategorias(new HashSet<>(categorias));
     }
@@ -196,6 +205,16 @@ public class UsuarioService {
                     usuario.setNombre(request.getNombre());
                     usuario.setApellido(request.getApellido());
                     usuario.setEmail(request.getEmail().trim().toLowerCase());
+
+                    if (usuario.getRol() == Rol.TRABAJADOR) {
+                        aplicarDatosProfesionales(
+                                usuario,
+                                request.getProfesion(),
+                                request.getAnosExperiencia(),
+                                request.getDescripcionProfesional(),
+                                request.getZonaTrabajo(),
+                                request.getCategoriaIds());
+                    }
 
                     return convertirAResponse(usuarioRepository.save(usuario));
                 });
