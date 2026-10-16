@@ -5,6 +5,7 @@ import com.ofix.dto.ServicioResponse;
 import com.ofix.entity.Rol;
 import com.ofix.entity.Usuario;
 import com.ofix.service.ServicioService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -36,7 +37,7 @@ public class ServicioController {
 
         Usuario usuario = (Usuario) authentication.getPrincipal();
 
-        if (usuario.getRol() != com.ofix.entity.Rol.TRABAJADOR) {
+        if (usuario.getRol() != Rol.TRABAJADOR) {
             return ResponseEntity.status(403).build();
         }
 
@@ -62,13 +63,16 @@ public class ServicioController {
         );
     }
 
-
-
+    // Solo lo ven su cliente, el profesional asignado, un administrador
+    // o un profesional de la categoría mientras la solicitud sigue pendiente.
     @GetMapping("/{id}")
     public ResponseEntity<ServicioResponse> buscarPorId(
-            @PathVariable Long id) {
+            @PathVariable Long id,
+            Authentication authentication) {
 
-        return servicioService.buscarPorId(id)
+        Usuario usuario = (Usuario) authentication.getPrincipal();
+
+        return servicioService.buscarPorId(id, usuario.getId())
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -76,10 +80,10 @@ public class ServicioController {
     // Crea un servicio usando los IDs del cliente y la categoría.
     @PostMapping
     public ResponseEntity<ServicioResponse> crearServicio(
-            @RequestBody ServicioRequest request,
+            @Valid @RequestBody ServicioRequest request,
             Authentication authentication) {
-        
-        Usuario usuario =(Usuario) authentication.getPrincipal();
+
+        Usuario usuario = (Usuario) authentication.getPrincipal();
 
         return servicioService.guardarServicio(request, usuario.getId())
                 .map(ResponseEntity::ok)
@@ -89,27 +93,12 @@ public class ServicioController {
     @PutMapping("/{id}")
     public ResponseEntity<ServicioResponse> actualizarServicio(
             @PathVariable Long id,
-            @RequestBody ServicioRequest request, Authentication authentication) {
-        
-        Usuario usuario = (Usuario) authentication.getPrincipal();        
-
-        return servicioService.actualizarServicio(id, request, usuario.getId())
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    // Permite que un trabajador autenticado acepte un servicio.
-    @PutMapping("/{servicioId}/aceptar")
-    public ResponseEntity<ServicioResponse> aceptarServicio(
-            @PathVariable Long servicioId,
+            @Valid @RequestBody ServicioRequest request,
             Authentication authentication) {
 
         Usuario usuario = (Usuario) authentication.getPrincipal();
 
-        return servicioService.aceptarServicio(
-                        servicioId,
-                        usuario.getId()
-                )
+        return servicioService.actualizarServicio(id, request, usuario.getId())
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -132,8 +121,8 @@ public class ServicioController {
     public ResponseEntity<ServicioResponse> cancelarServicio(
             @PathVariable Long servicioId,
             Authentication authentication) {
-             
-        Usuario usuario = (Usuario) authentication.getPrincipal();        
+
+        Usuario usuario = (Usuario) authentication.getPrincipal();
 
         return servicioService.cancelarServicio(
                         servicioId,
@@ -143,15 +132,13 @@ public class ServicioController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> eliminarServicio(@PathVariable Long id,Authentication authentication) {
+    public ResponseEntity<Void> eliminarServicio(
+            @PathVariable Long id,
+            Authentication authentication) {
 
         Usuario usuario = (Usuario) authentication.getPrincipal();
         servicioService.eliminarServicio(id, usuario.getId());
         return ResponseEntity.noContent().build();
     }
-    
-
-    
 }

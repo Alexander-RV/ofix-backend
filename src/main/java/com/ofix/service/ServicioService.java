@@ -13,6 +13,7 @@ import com.ofix.repository.ServicioRepository;
 import com.ofix.repository.UsuarioRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.ofix.entity.Rol;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -97,9 +98,44 @@ public class ServicioService {
                 .toList();
     }
 
-    public Optional<ServicioResponse> buscarPorId(Long id) {
+    // Devuelve la solicitud solo si el usuario tiene relación con ella.
+    @Transactional(readOnly = true)
+    public Optional<ServicioResponse> buscarPorId(Long id, Long usuarioId) {
+
+        Optional<Usuario> usuarioOptional =
+                usuarioRepository.findById(usuarioId);
+
+        if (usuarioOptional.isEmpty()) {
+            return Optional.empty();
+        }
+
+        Usuario usuario = usuarioOptional.get();
+
         return servicioRepository.findById(id)
+                .filter(servicio -> puedeVer(servicio, usuario))
                 .map(this::convertirAResponse);
+    }
+
+    private boolean puedeVer(Servicio servicio, Usuario usuario) {
+
+        if (usuario.getRol() == Rol.ADMIN) {
+            return true;
+        }
+
+        if (servicio.getCliente().getId().equals(usuario.getId())) {
+            return true;
+        }
+
+        if (servicio.getTrabajador() != null
+                && servicio.getTrabajador().getId().equals(usuario.getId())) {
+            return true;
+        }
+
+        // Un profesional puede ver las solicitudes pendientes de sus categorías.
+        return usuario.getRol() == Rol.TRABAJADOR
+                && "PENDIENTE".equals(servicio.getEstado())
+                && usuario.getCategorias().stream().anyMatch(
+                        c -> c.getId().equals(servicio.getCategoria().getId()));
     }
 
     public Optional<ServicioResponse> guardarServicio(
@@ -201,48 +237,7 @@ public class ServicioService {
         servicioRepository.delete(servicio);
     }
 
-    public Optional<ServicioResponse> aceptarServicio(
-            Long servicioId,
-            Long trabajadorId) {
-
-        Optional<Servicio> servicioOptional =
-                servicioRepository.findById(servicioId);
-
-        Optional<Usuario> trabajadorOptional =
-                usuarioRepository.findById(trabajadorId);
-
-        if (servicioOptional.isEmpty() ||
-                trabajadorOptional.isEmpty()) {
-
-            return Optional.empty();
-        }
-
-        Servicio servicio = servicioOptional.get();
-        Usuario trabajador = trabajadorOptional.get();
-
-        if (!trabajador.getRol().name().equals("TRABAJADOR")) {
-            throw new ReglaNegocioException(
-                    "Solo los trabajadores pueden aceptar servicios"
-            );
-        }
-
-        if (!servicio.getEstado().equals("PENDIENTE")) {
-            throw new ReglaNegocioException(
-                    "El servicio no está disponible para ser aceptado"
-            );
-        }
-
-        servicio.setTrabajador(trabajador);
-        servicio.setEstado("EN_PROCESO");
-
-        Servicio servicioActualizado =
-                servicioRepository.save(servicio);
-
-        return Optional.of(
-                convertirAResponse(servicioActualizado)
-        );
-    }
-
+    
     public Optional<ServicioResponse> finalizarServicio(
             Long servicioId,
             Long trabajadorId) {
