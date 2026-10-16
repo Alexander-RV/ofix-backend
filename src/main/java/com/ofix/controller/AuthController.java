@@ -4,6 +4,7 @@ import com.ofix.dto.AuthRequest;
 import com.ofix.dto.AuthResponse;
 import com.ofix.dto.PasswordResetRequest;
 import com.ofix.dto.ResetPasswordRequest;
+import com.ofix.exception.ReglaNegocioException;
 import com.ofix.service.AuthService;
 import com.ofix.service.PasswordResetService;
 import jakarta.validation.Valid;
@@ -53,7 +54,7 @@ public class AuthController {
         if (!request.getNuevaPassword()
                 .equals(request.getConfirmarPassword())) {
 
-            throw new RuntimeException(
+            throw new ReglaNegocioException(
                     "La nueva contraseña y su confirmación no coinciden"
             );
         }

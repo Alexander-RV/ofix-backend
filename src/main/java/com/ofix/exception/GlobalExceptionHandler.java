@@ -1,5 +1,6 @@
 package com.ofix.exception;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -16,6 +17,16 @@ public class GlobalExceptionHandler {
             ReglaNegocioException ex) {
 
         return ResponseEntity.badRequest().body(
+                Map.of("mensaje", ex.getMessage())
+        );
+    }
+
+    // Login con correo o contraseña incorrectos.
+    @ExceptionHandler(CredencialesInvalidasException.class)
+    public ResponseEntity<Map<String, String>> manejarCredencialesInvalidas(
+            CredencialesInvalidasException ex) {
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
                 Map.of("mensaje", ex.getMessage())
         );
     }
