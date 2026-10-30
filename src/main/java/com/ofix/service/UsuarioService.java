@@ -28,15 +28,18 @@ public class UsuarioService {
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
     private final CategoriaServicioRepository categoriaRepository;
+    private final EmailService emailService;
 
     public UsuarioService(
             UsuarioRepository usuarioRepository,
             PasswordEncoder passwordEncoder,
-            CategoriaServicioRepository categoriaRepository) {
+            CategoriaServicioRepository categoriaRepository,
+            EmailService emailService) {
 
         this.usuarioRepository = usuarioRepository;
         this.passwordEncoder = passwordEncoder;
         this.categoriaRepository = categoriaRepository;
+        this.emailService = emailService;
     }
 
     public List<UsuarioResponse> listarUsuarios() {
@@ -301,7 +304,13 @@ public class UsuarioService {
             usuario.setMotivoRechazo(null);
             usuario.setFechaRevision(LocalDateTime.now());
 
-            return convertirAResponse(usuarioRepository.save(usuario));
+            Usuario guardado = usuarioRepository.save(usuario);
+
+            //Aviso por correo al profesional (Segundo plano)
+            emailService.enviarRegistroAprobado(
+                    guardado.getEmail(), guardado.getNombre());
+
+            return convertirAResponse(guardado);
         });
     }
 
@@ -315,7 +324,13 @@ public class UsuarioService {
             usuario.setMotivoRechazo(motivo.trim());
             usuario.setFechaRevision(LocalDateTime.now());
 
-            return convertirAResponse(usuarioRepository.save(usuario));
+            Usuario guardado = usuarioRepository.save(usuario);
+
+            //El motivo le llega al correo con el que intentó registrarse
+            emailService.enviarRegistroRechazado(
+                    guardado.getEmail(), guardado.getNombre(), guardado.getMotivoRechazo());
+
+            return convertirAResponse(guardado);
         });
     }
 
