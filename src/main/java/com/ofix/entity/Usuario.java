@@ -40,6 +40,20 @@ public class Usuario {
     @Column(nullable = false)
     private LocalDateTime fechaRegistro = LocalDateTime.now();
 
+    // Revisión del administrador (solo importa para TRABAJADOR).
+    // Se deja sin "nullable = false" para que Hibernate pueda agregar la
+    // columna aunque ya existan usuarios; un valor null se trata como VERIFICADO.
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private EstadoVerificacion estadoVerificacion = EstadoVerificacion.VERIFICADO;
+
+    // Motivo escrito por el admin cuando rechaza el registro
+    @Column(length = 500)
+    private String motivoRechazo;
+
+    // Fecha de la última decisión del admin
+    private LocalDateTime fechaRevision;
+
     //Datos profesionales (solo para TRABAJADOR) 
 
     private String profesion;

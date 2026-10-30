@@ -4,6 +4,7 @@ import com.ofix.entity.Rol;
 import lombok.Getter;
 import lombok.Setter;
 import java.util.List;
+import com.ofix.entity.EstadoVerificacion;
 
 import java.time.LocalDateTime;
 
@@ -34,6 +35,9 @@ public class UsuarioResponse {
     private String zonaTrabajo;
 
     private List<String> categorias;
+    
+    private EstadoVerificacion estadoVerificacion;
+    private String motivoRechazo;
 
 
 }

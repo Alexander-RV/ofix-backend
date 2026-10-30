@@ -5,6 +5,7 @@ import com.ofix.dto.CambiarPasswordRequest;
 import com.ofix.dto.UsuarioRequest;
 import com.ofix.dto.UsuarioResponse;
 import com.ofix.entity.CategoriaServicio;
+import com.ofix.entity.EstadoVerificacion;
 import com.ofix.entity.Rol;
 import com.ofix.entity.Usuario;
 import com.ofix.exception.ReglaNegocioException;
@@ -13,7 +14,10 @@ import com.ofix.repository.UsuarioRepository;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -72,6 +76,13 @@ public class UsuarioService {
         usuario.setPassword(passwordEncoder.encode(request.getPassword()));
 
         usuario.setRol(rol);
+
+        // Los profesionales quedan PENDIENTES hasta que el admin los apruebe;
+        // clientes entran directo.
+        usuario.setEstadoVerificacion(
+                rol == Rol.TRABAJADOR
+                        ? EstadoVerificacion.PENDIENTE
+                        : EstadoVerificacion.VERIFICADO);
 
         // Si es profesional, validamos y guardamos sus datos profesionales.
         if (rol == Rol.TRABAJADOR) {
@@ -263,6 +274,64 @@ public class UsuarioService {
         });
     }
 
+    // ---------------------------------------------------------------------
+    // Revisión de profesionales (panel del administrador)
+    // ---------------------------------------------------------------------
+
+    // Lista los profesionales, del más reciente al más antiguo.
+    // Si estado es null devuelve todos; si no, solo los de ese estado.
+    @Transactional(readOnly = true)
+    public List<UsuarioResponse> listarProfesionales(EstadoVerificacion estado) {
+        return usuarioRepository.findAll()
+                .stream()
+                .filter(u -> u.getRol() == Rol.TRABAJADOR)
+                .filter(u -> estado == null || estadoDe(u) == estado)
+                .sorted(Comparator.comparing(Usuario::getFechaRegistro).reversed())
+                .map(this::convertirAResponse)
+                .toList();
+    }
+
+    @Transactional
+    public Optional<UsuarioResponse> aprobarProfesional(Long id) {
+        return usuarioRepository.findById(id).map(usuario -> {
+
+            validarEsProfesional(usuario);
+
+            usuario.setEstadoVerificacion(EstadoVerificacion.VERIFICADO);
+            usuario.setMotivoRechazo(null);
+            usuario.setFechaRevision(LocalDateTime.now());
+
+            return convertirAResponse(usuarioRepository.save(usuario));
+        });
+    }
+
+    @Transactional
+    public Optional<UsuarioResponse> rechazarProfesional(Long id, String motivo) {
+        return usuarioRepository.findById(id).map(usuario -> {
+
+            validarEsProfesional(usuario);
+
+            usuario.setEstadoVerificacion(EstadoVerificacion.RECHAZADO);
+            usuario.setMotivoRechazo(motivo.trim());
+            usuario.setFechaRevision(LocalDateTime.now());
+
+            return convertirAResponse(usuarioRepository.save(usuario));
+        });
+    }
+
+    private void validarEsProfesional(Usuario usuario) {
+        if (usuario.getRol() != Rol.TRABAJADOR) {
+            throw new ReglaNegocioException("El usuario no es un profesional");
+        }
+    }
+
+    // Un usuario anterior a esta función (estado null) cuenta como VERIFICADO
+    private EstadoVerificacion estadoDe(Usuario usuario) {
+        return usuario.getEstadoVerificacion() == null
+                ? EstadoVerificacion.VERIFICADO
+                : usuario.getEstadoVerificacion();
+    }
+
     // Convierte la entidad Usuario en una respuesta segura para la API.
     private UsuarioResponse convertirAResponse(Usuario usuario) {
 
@@ -275,6 +344,8 @@ public class UsuarioService {
         response.setRol(usuario.getRol());
         response.setActivo(usuario.getActivo());
         response.setFechaRegistro(usuario.getFechaRegistro());
+        response.setEstadoVerificacion(estadoDe(usuario));
+        response.setMotivoRechazo(usuario.getMotivoRechazo());
 
         if (usuario.getRol() == Rol.TRABAJADOR) {
             response.setProfesion(usuario.getProfesion());
