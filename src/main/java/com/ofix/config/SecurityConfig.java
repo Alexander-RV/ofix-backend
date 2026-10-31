@@ -95,6 +95,18 @@ public class SecurityConfig {
                                 "/api/usuarios"
                         ).hasRole("ADMIN")
 
+                        // Cada usuario puede ver su propio perfil
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/usuarios/me"
+                        ).authenticated()
+
+                        // Consultar a otro usuario por id es solo para ADMIN
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/usuarios/*"
+                        ).hasRole("ADMIN")
+
                         // Categorías: consultar es para cualquier usuario con sesión,
                         // pero crear, editar y eliminar es solo para ADMIN
                         .requestMatchers(

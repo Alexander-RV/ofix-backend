@@ -12,6 +12,7 @@ import com.ofix.repository.ServicioRepository;
 import com.ofix.repository.UsuarioRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.ofix.entity.EstadoVerificacion;
 
 import java.util.List;
 
@@ -46,6 +47,11 @@ public class OfertaService {
         if (trabajador.getRol() != Rol.TRABAJADOR) {
             throw new ReglaNegocioException(
                     "Solo los profesionales pueden enviar ofertas");
+        }
+
+        if (!profesionalHabilitado(trabajador)) {
+            throw new ReglaNegocioException(
+                    "Tu cuenta de profesional no está habilitada para enviar ofertas");
         }
 
         Servicio servicio = buscarServicio(servicioId);
@@ -127,6 +133,11 @@ public class OfertaService {
                     "La solicitud ya no está disponible");
         }
 
+        if (!profesionalHabilitado(oferta.getTrabajador())) {
+            throw new ReglaNegocioException(
+                    "Este profesional ya no está disponible. Elige otra oferta.");
+        }
+
         oferta.setEstado("ACEPTADA");
 
         servicio.setTrabajador(oferta.getTrabajador());
@@ -203,6 +214,14 @@ public class OfertaService {
             throw new ReglaNegocioException(
                     "Solo el cliente que creó la solicitud puede hacer esto");
         }
+    }
+
+    // Un profesional solo opera si su cuenta está activa y verificada.
+    private boolean profesionalHabilitado(Usuario trabajador) {
+        EstadoVerificacion estado = trabajador.getEstadoVerificacion();
+
+        return Boolean.TRUE.equals(trabajador.getActivo())
+                && (estado == null || estado == EstadoVerificacion.VERIFICADO);
     }
 
     private OfertaResponse convertirAResponse(Oferta oferta) {
