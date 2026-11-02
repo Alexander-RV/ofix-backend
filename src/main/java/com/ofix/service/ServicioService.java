@@ -66,7 +66,7 @@ public class ServicioService {
         if (!trabajador.estaHabilitado()) {
                 throw new ReglaNegocioException("Tu cuenta de profesional no está habilitada");
         }                
-        
+
         if (trabajador.getCategorias().isEmpty()) {
             return List.of();
         }
@@ -173,6 +173,7 @@ public class ServicioService {
         servicio.setTitulo(request.getTitulo());
         servicio.setDescripcion(request.getDescripcion());
         servicio.setDireccion(request.getDireccion());
+        servicio.setZona(request.getZona().trim());
         servicio.setCliente(cliente.get());
         servicio.setCategoria(categoria.get());
 
@@ -208,6 +209,7 @@ public class ServicioService {
             servicio.setTitulo(request.getTitulo());
             servicio.setDescripcion(request.getDescripcion());
             servicio.setDireccion(request.getDireccion());
+            servicio.setZona(request.getZona().trim());
 
             aplicarDatosOpcionales(servicio, request);
 
@@ -359,6 +361,7 @@ public class ServicioService {
         response.setTitulo(servicio.getTitulo());
         response.setDescripcion(servicio.getDescripcion());
         response.setDireccion(servicio.getDireccion());
+        response.setZona(servicio.getZona());
         response.setFechaSolicitud(servicio.getFechaSolicitud());
         response.setFechaProgramada(servicio.getFechaProgramada());
         response.setPresupuesto(servicio.getPresupuesto());

@@ -27,6 +27,11 @@ public class Servicio {
     @Column(nullable = false)
     private String direccion;
 
+    // Barrio o sector: lo único del lugar que ven los profesionales
+    // La dirección exacta queda privada.
+    @Column(length = 100)
+    private String zona;
+
     @Column(nullable = false)
     private LocalDateTime fechaSolicitud = LocalDateTime.now();
 

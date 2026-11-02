@@ -17,6 +17,8 @@ public class ServicioResponse {
     private String descripcion;
 
     private String direccion;
+    
+    private String zona;
 
     private LocalDateTime fechaSolicitud;
 

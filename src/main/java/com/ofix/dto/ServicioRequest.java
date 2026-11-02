@@ -24,6 +24,10 @@ public class ServicioRequest {
     @NotBlank(message = "La dirección es obligatoria")
     private String direccion;
 
+    @NotBlank(message = "El barrio o sector es obligatorio")
+    @Size(max = 100, message = "El barrio o sector no puede superar los 100 caracteres")
+    private String zona;
+
     // ID de la categoría del servicio.
     @NotNull(message = "La categoría es obligatoria")
     private Long categoriaId;
