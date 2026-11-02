@@ -4,6 +4,7 @@ import com.ofix.dto.ServicioRequest;
 import com.ofix.dto.ServicioResponse;
 import com.ofix.entity.CategoriaServicio;
 import com.ofix.entity.Oferta;
+import com.ofix.entity.Rol;
 import com.ofix.entity.Servicio;
 import com.ofix.entity.Usuario;
 import com.ofix.exception.ReglaNegocioException;
@@ -13,7 +14,6 @@ import com.ofix.repository.ServicioRepository;
 import com.ofix.repository.UsuarioRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.ofix.entity.Rol;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -62,10 +62,11 @@ public class ServicioService {
         Usuario trabajador = usuarioRepository.findById(trabajadorId)
                 .orElseThrow(() ->
                         new ReglaNegocioException("El usuario no existe"));
-        
+
         if (!trabajador.estaHabilitado()) {
-                throw new ReglaNegocioException("Tu cuenta de profesional no está habilitada");
-        }                
+            throw new ReglaNegocioException(
+                    "Tu cuenta de profesional no está habilitada");
+        }
 
         if (trabajador.getCategorias().isEmpty()) {
             return List.of();
@@ -77,7 +78,8 @@ public class ServicioService {
                         trabajador.getCategorias())
                 .stream()
                 .map(servicio -> {
-                    ServicioResponse response = convertirAResponse(servicio);
+                    ServicioResponse response =
+                            convertirAResponseParaProfesional(servicio);
                     response.setYaOfertado(
                             ofertaRepository
                                     .existsByServicioIdAndTrabajadorIdAndEstado(
@@ -117,7 +119,9 @@ public class ServicioService {
 
         return servicioRepository.findById(id)
                 .filter(servicio -> puedeVer(servicio, usuario))
-                .map(this::convertirAResponse);
+                .map(servicio -> ocultarDatosSensibles(servicio, usuario)
+                        ? convertirAResponseParaProfesional(servicio)
+                        : convertirAResponse(servicio));
     }
 
     private boolean puedeVer(Servicio servicio, Usuario usuario) {
@@ -135,9 +139,9 @@ public class ServicioService {
             return true;
         }
 
-        // Un profesional puede ver las solicitudes pendientes de sus categorías.
+        // Un profesional habilitado puede ver las solicitudes pendiente de sus categorias.
         return usuario.getRol() == Rol.TRABAJADOR
-                && usuario.estaHabilitado()   
+                && usuario.estaHabilitado()
                 && "PENDIENTE".equals(servicio.getEstado())
                 && usuario.getCategorias().stream().anyMatch(
                         c -> c.getId().equals(servicio.getCategoria().getId()));
@@ -162,7 +166,7 @@ public class ServicioService {
                     "La categoría seleccionada no está disponible");
         }
 
-        if (cliente.get().getRol() != com.ofix.entity.Rol.CLIENTE) {
+        if (cliente.get().getRol() != Rol.CLIENTE) {
             throw new ReglaNegocioException(
                     "Solo los clientes pueden crear servicios"
             );
@@ -249,7 +253,6 @@ public class ServicioService {
         servicioRepository.delete(servicio);
     }
 
-    
     public Optional<ServicioResponse> finalizarServicio(
             Long servicioId,
             Long trabajadorId) {
@@ -275,7 +278,8 @@ public class ServicioService {
 
                     if (!servicio.getTrabajador().estaHabilitado()) {
                         throw new ReglaNegocioException(
-                                "Tu cuenta de profesional no está habilitada para finalizar servicios");
+                                "Tu cuenta de profesional no está habilitada para finalizar servicios"
+                        );
                     }
 
                     servicio.setEstado("COMPLETADO");
@@ -349,6 +353,39 @@ public class ServicioService {
 
         servicio.setFechaProgramada(request.getFechaProgramada());
         servicio.setPresupuesto(request.getPresupuesto());
+    }
+
+    // Un profesional ve la dirección y el nombre completo solo si el cliente lo eligió.
+    private boolean ocultarDatosSensibles(Servicio servicio, Usuario usuario) {
+        if (usuario.getRol() != Rol.TRABAJADOR) {
+            return false;
+        }
+
+        return servicio.getTrabajador() == null
+                || !servicio.getTrabajador().getId().equals(usuario.getId());
+    }
+
+    // Respuesta para un profesional que todavía no fue elegido.
+    private ServicioResponse convertirAResponseParaProfesional(
+            Servicio servicio) {
+
+        ServicioResponse response = convertirAResponse(servicio);
+
+        response.setDireccion(null);
+        response.setClienteNombre(nombreAbreviado(servicio.getCliente()));
+
+        return response;
+    }
+
+    // "Carlos Cliente" -> "Carlos C."
+    private String nombreAbreviado(Usuario usuario) {
+        String apellido = usuario.getApellido();
+
+        if (apellido == null || apellido.isBlank()) {
+            return usuario.getNombre();
+        }
+
+        return usuario.getNombre() + " " + apellido.trim().charAt(0) + ".";
     }
 
     private ServicioResponse convertirAResponse(
