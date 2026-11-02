@@ -62,7 +62,11 @@ public class ServicioService {
         Usuario trabajador = usuarioRepository.findById(trabajadorId)
                 .orElseThrow(() ->
                         new ReglaNegocioException("El usuario no existe"));
-
+        
+        if (!trabajador.estaHabilitado()) {
+                throw new ReglaNegocioException("Tu cuenta de profesional no está habilitada");
+        }                
+        
         if (trabajador.getCategorias().isEmpty()) {
             return List.of();
         }
@@ -133,6 +137,7 @@ public class ServicioService {
 
         // Un profesional puede ver las solicitudes pendientes de sus categorías.
         return usuario.getRol() == Rol.TRABAJADOR
+                && usuario.estaHabilitado()   
                 && "PENDIENTE".equals(servicio.getEstado())
                 && usuario.getCategorias().stream().anyMatch(
                         c -> c.getId().equals(servicio.getCategoria().getId()));
@@ -150,6 +155,11 @@ public class ServicioService {
 
         if (cliente.isEmpty() || categoria.isEmpty()) {
             return Optional.empty();
+        }
+
+        if (!Boolean.TRUE.equals(categoria.get().getActivo())) {
+            throw new ReglaNegocioException(
+                    "La categoría seleccionada no está disponible");
         }
 
         if (cliente.get().getRol() != com.ofix.entity.Rol.CLIENTE) {
@@ -259,6 +269,11 @@ public class ServicioService {
                         throw new ReglaNegocioException(
                                 "Solo el trabajador asignado puede finalizar este servicio"
                         );
+                    }
+
+                    if (!servicio.getTrabajador().estaHabilitado()) {
+                        throw new ReglaNegocioException(
+                                "Tu cuenta de profesional no está habilitada para finalizar servicios");
                     }
 
                     servicio.setEstado("COMPLETADO");

@@ -73,5 +73,13 @@ public class Usuario {
     )
     private Set<CategoriaServicio> categorias = new HashSet<>();
 
+    // Un profesional opera solo si la cuenta está activa y verificada.
+    
+    public boolean estaHabilitado() {
+        return Boolean.TRUE.equals(activo)
+                && (estadoVerificacion == null
+                    || estadoVerificacion == EstadoVerificacion.VERIFICADO);
+    }
+
 
 }
